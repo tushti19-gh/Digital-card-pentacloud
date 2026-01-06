@@ -29,16 +29,21 @@ Make sure your `.gitignore` includes:
 # Environment files
 .env
 .env.local
+backend/.env
 
-# Google Wallet credentials
+# Credentials
 google-wallet-key.json
 backend/google-wallet-key.json
+*-key.json
 
 # Dependencies
 node_modules/
+backend/node_modules/
 
 # Build
-.next/
 dist/
-build/
 .vercel
+
+# IDE
+.vscode/
+.idea/

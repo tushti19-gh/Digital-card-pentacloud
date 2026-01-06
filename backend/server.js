@@ -1,6 +1,6 @@
 // ============================================
 // FILE: backend/server.js
-// VERCEL-READY - Uses environment variables
+// VERCEL SERVERLESS - Single deployment
 // ============================================
 
 const express = require('express');
@@ -115,18 +115,12 @@ async function makeApiRequest(endpoint, method = 'GET', body = null) {
 // HELPER: Format hex color for Google Wallet
 // ============================================
 function formatHexColor(color) {
-  if (!color) return '#1e293b'; // Default color
-  
-  // Remove # if present
+  if (!color) return '#1e293b';
   let hex = color.replace('#', '');
-  
-  // Validate hex color (should be 6 characters)
   if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
     console.warn(`⚠️  Invalid color format: ${color}, using default`);
     return '#1e293b';
   }
-  
-  // Return with # prefix
   return `#${hex}`;
 }
 
@@ -134,13 +128,11 @@ function formatHexColor(color) {
 // HELPER: Validate and get image URL
 // ============================================
 function getValidImageUrl(url, type = 'logo') {
-  // If no URL provided, return null (will be omitted from object)
   if (!url || url.includes('placeholder')) {
     console.log(`ℹ️  No valid ${type} URL provided, skipping ${type}`);
     return null;
   }
   
-  // Validate URL format
   try {
     const urlObj = new URL(url);
     if (urlObj.protocol !== 'https:') {
@@ -207,14 +199,12 @@ async function ensureGenericClass() {
   };
 
   try {
-    // Try to get existing class
     await makeApiRequest(`/genericClass/${classId}`, 'GET');
     console.log('✅ Generic class exists');
     return classId;
   } catch (error) {
     if (error.code === 404 || error.response?.status === 404) {
       try {
-        // Create new class
         await makeApiRequest('/genericClass', 'POST', genericClass);
         console.log('✅ Generic class created');
         return classId;
@@ -236,7 +226,6 @@ async function createWalletPass(cardData) {
   const objectId = `${ISSUER_ID}.${cardData.userId || Date.now()}`;
   const classId = `${ISSUER_ID}.business_card_class`;
 
-  // Validate image URLs
   const logoUrl = getValidImageUrl(cardData.avatarUrl, 'logo');
   const bannerUrl = getValidImageUrl(cardData.bannerUrl, 'banner');
 
@@ -298,7 +287,6 @@ async function createWalletPass(cardData) {
     hexBackgroundColor: formatHexColor(cardData.themeColor)
   };
 
-  // Add logo only if valid URL provided
   if (logoUrl) {
     genericObject.logo = {
       sourceUri: {
@@ -313,7 +301,6 @@ async function createWalletPass(cardData) {
     };
   }
 
-  // Add hero image only if valid URL provided
   if (bannerUrl) {
     genericObject.heroImage = {
       sourceUri: {
@@ -329,14 +316,12 @@ async function createWalletPass(cardData) {
   }
 
   try {
-    // Try to create new object
     await makeApiRequest('/genericObject', 'POST', genericObject);
     console.log('✅ Wallet object created:', objectId);
     return objectId;
   } catch (error) {
     if (error.code === 409 || error.response?.status === 409) {
       try {
-        // Object exists, update it
         await makeApiRequest(`/genericObject/${objectId}`, 'PUT', genericObject);
         console.log('✅ Wallet object updated:', objectId);
         return objectId;
@@ -399,6 +384,13 @@ app.get('/', (req, res) => {
   });
 });
 
+app.get('/api', (req, res) => {
+  res.json({ 
+    status: 'online',
+    message: 'Backend API is running'
+  });
+});
+
 // Initialize class
 app.post('/api/init-class', async (req, res) => {
   try {
@@ -439,13 +431,8 @@ app.post('/api/create-wallet-pass', async (req, res) => {
       });
     }
 
-    // Ensure class exists
     await ensureGenericClass();
-
-    // Create wallet object
     const objectId = await createWalletPass(cardData);
-
-    // Generate save URL
     const saveUrl = generateSaveUrl(objectId);
 
     console.log('✅ Wallet pass created successfully');
@@ -520,12 +507,17 @@ app.use((err, req, res, next) => {
 });
 
 // ============================================
-// START SERVER
+// EXPORT FOR VERCEL SERVERLESS
 // ============================================
-app.listen(PORT, async () => {
-  const env = process.env.GOOGLE_WALLET_CREDENTIALS ? '☁️  Production (Vercel)' : '💻 Development (Local)';
-  
-  console.log(`
+if (process.env.VERCEL) {
+  // Vercel serverless function
+  module.exports = app;
+} else {
+  // Local development server
+  app.listen(PORT, async () => {
+    const env = process.env.GOOGLE_WALLET_CREDENTIALS ? '☁️  Production (Vercel)' : '💻 Development (Local)';
+    
+    console.log(`
 ╔════════════════════════════════════════════╗
 ║   🎫 Google Wallet Backend API            ║
 ║   🚀 Running on port ${PORT}                  ║
@@ -543,18 +535,16 @@ app.listen(PORT, async () => {
    POST /api/init-class - Initialize wallet class
    POST /api/create-wallet-pass - Create new pass
    POST /api/update-wallet-pass - Update existing pass
-  `);
+    `);
 
-  // Auto-initialize class on startup
-  try {
-    console.log('⏳ Initializing Google Wallet class...');
-    await ensureGenericClass();
-    console.log('✅ Generic class ready');
-    console.log('\n🎉 Server is ready to accept requests!\n');
-  } catch (error) {
-    console.error('⚠️  Could not auto-initialize class:', error.message);
-    console.log('You can manually initialize with: npm run backend:init\n');
-  }
-});
-
-module.exports = app;
+    try {
+      console.log('⏳ Initializing Google Wallet class...');
+      await ensureGenericClass();
+      console.log('✅ Generic class ready');
+      console.log('\n🎉 Server is ready to accept requests!\n');
+    } catch (error) {
+      console.error('⚠️  Could not auto-initialize class:', error.message);
+      console.log('You can manually initialize with: npm run backend:init\n');
+    }
+  });
+}
