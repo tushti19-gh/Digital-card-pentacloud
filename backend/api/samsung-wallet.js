@@ -11,7 +11,7 @@ const SAMSUNG_CONFIG = {
 
 // CORS headers
 const corsHeaders = {
-  'Access-Control-Allow-Credentials': 'true',
+
   'Access-Control-Allow-Origin': 'https://digital-card-pentacloud-mpxy60e03-tushti19-ghs-projects.vercel.app', // Change to your domain in production
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
