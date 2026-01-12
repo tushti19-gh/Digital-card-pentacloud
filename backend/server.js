@@ -37,11 +37,17 @@ const SAMSUNG_CONFIG = {
   CARD_ID: '3ir7iadicu000'
 };
 
-const SAMSUNG_PRIVATE_KEY = process.env.SAMSUNG_PRIVATE_KEY;
+const SAMSUNG_PRIVATE_KEY = process.env.SAMSUNG_PRIVATE_KEY
+  ?.replace(/\\n/g, '\n');
+
 
 if (!SAMSUNG_PRIVATE_KEY) {
   console.warn('⚠️ SAMSUNG_PRIVATE_KEY not set – Samsung Wallet will fail in prod');
 }
+console.log(
+  '🔑 Samsung key loaded:',
+  SAMSUNG_PRIVATE_KEY?.includes('BEGIN PRIVATE KEY')
+);
 
 // ============================================
 // SAMSUNG JWT GENERATION
