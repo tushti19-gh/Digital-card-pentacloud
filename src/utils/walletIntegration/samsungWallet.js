@@ -1,15 +1,13 @@
 // ============================================
 // FILE: src/utils/walletIntegration/samsungWallet.js
-// CORRECTED VERSION
+// FIXED - Following Samsung Official API Spec
 // ============================================
 
-// ============================================
-// SAMSUNG WALLET CONFIGURATION
-// ============================================
 const SAMSUNG_CONFIG = {
   PARTNER_CODE: '4137610299143138240',
   CARD_ID: '3ir7iadicu000',
-  BACKEND_URL: process.env.REACT_APP_SAMSUNG_BACKEND_URL || 'https://digital-card-pentacloud-rdmhkz80o-tushti19-ghs-projects.vercel.app',
+  // FIX: Use actual Vercel URL, not placeholder
+  BACKEND_URL: import.meta.env.VITE_SAMSUNG_BACKEND_URL || 'https://digital-card-pentacloud-dq2d8qtq4-tushti19-ghs-projects.vercel.app',
   SAMSUNG_SCRIPT_URL: 'https://us-cdn-gpp.mcsvc.samsung.com/lib/wallet-card.js',
   RD_CLICK_URL: 'https://us-rd.mcsvc.samsung.com/statistics/click/addtowlt?ep=C50C3754FEB24833B30C10B275BB6AB8;cc=GC;ii=4063269063441135936;co=4137610299143138240;cp=1288017491089625089;si=24;pg=4058691328745130560;pi=Aqz68EBXSx6Mv9jsaZxzaA;tp=4137948898276138496;li=0',
   RD_IMPRESSION_URL: 'https://us-rd.mcsvc.samsung.com/statistics/impression/addtowlt?ep=C50C3754FEB24833B30C10B275BB6AB8;cc=GC;ii=4063269063441135936;co=4137610299143138240;cp=1288017491089625089;si=24;pg=4058691328745130560;pi=Aqz68EBXSx6Mv9jsaZxzaA;tp=4137948898276138496;li=0'
@@ -28,7 +26,6 @@ const loadSamsungScript = () => {
     }
 
     if (scriptLoading) {
-      // Wait for existing load to complete
       const checkInterval = setInterval(() => {
         if (scriptLoaded) {
           clearInterval(checkInterval);
@@ -71,34 +68,41 @@ export const addToSamsungWallet = async (formData, publicCardUrl) => {
       }
 
       console.log('📱 Adding to Samsung Wallet...');
+      console.log('🌐 Backend URL:', SAMSUNG_CONFIG.BACKEND_URL);
 
       // Step 1: Load Samsung's script
       await loadSamsungScript();
 
-      // Step 2: Get JWT token from backend
-      console.log('🔐 Requesting token from backend...');
-      const response = await fetch(`${SAMSUNG_CONFIG.BACKEND_URL}/api/samsung-wallet/create`, {
+      // Step 2: Get JWT token (cdata) from backend
+      console.log('🔐 Requesting JWT token from backend...');
+      
+      const backendUrl = `${SAMSUNG_CONFIG.BACKEND_URL}/api/samsung-wallet/generate-token`;
+      console.log('📡 Calling:', backendUrl);
+      
+      const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          publicCardUrl: publicCardUrl,
-          title: formData.fullName || 'Digital Business Card',
-          subtitle: `${formData.jobTitle || 'Professional'}${formData.companyName ? ` @ ${formData.companyName}` : ''}`,
-          description: 'Employee digital identity card'
+          cardData: {
+            qrValue: publicCardUrl,
+            title: formData.fullName || 'Digital Business Card',
+            subtitle: `${formData.jobTitle || 'Professional'}${formData.companyName ? ` @ ${formData.companyName}` : ''}`,
+            description: 'Employee digital identity card'
+          }
         })
       });
-      console.log('🌐 Backend response received');
+
       if (!response.ok) {
-        throw new Error(`Backend error: ${response.status}`);
+        throw new Error(`Backend error: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('✅ Token received');
+      console.log('✅ JWT Token received');
 
       if (!result.token) {
-        throw new Error('No token received from backend');
+        throw new Error('No JWT token received from backend');
       }
 
       // Step 3: Create temporary container for Samsung button
@@ -110,13 +114,14 @@ export const addToSamsungWallet = async (formData, publicCardUrl) => {
       container.style.left = '-9999px';
       document.body.appendChild(container);
 
-      // Step 4: Initialize Samsung Wallet button
+      // Step 4: Initialize Samsung Wallet button using their official API
+      console.log('🔧 Initializing Samsung Wallet button...');
       window.samsungWallet.addButton({
         partnerCode: SAMSUNG_CONFIG.PARTNER_CODE,
         cardId: SAMSUNG_CONFIG.CARD_ID,
-        cdata: result.token,
-        RDClickUrl: result.rdClickUrl || SAMSUNG_CONFIG.RD_CLICK_URL,
-        RDImpressionUrl: result.rdImpressionUrl || SAMSUNG_CONFIG.RD_IMPRESSION_URL,
+        cdata: result.token, // JWT token
+        RDClickUrl: SAMSUNG_CONFIG.RD_CLICK_URL,
+        RDImpressionUrl: SAMSUNG_CONFIG.RD_IMPRESSION_URL,
         targetId: containerId,
         buttonId: `${containerId}-btn`
       });
@@ -127,10 +132,10 @@ export const addToSamsungWallet = async (formData, publicCardUrl) => {
       setTimeout(() => {
         const generatedButton = document.querySelector(`#${containerId} a, #${containerId} button`);
         if (generatedButton) {
-          console.log('🔗 Triggering Samsung Wallet...');
+          console.log('🔗 Opening Samsung Wallet...');
           generatedButton.click();
           
-          // Cleanup after delay
+          // Cleanup
           setTimeout(() => {
             if (container.parentNode) {
               container.parentNode.removeChild(container);
@@ -143,24 +148,18 @@ export const addToSamsungWallet = async (formData, publicCardUrl) => {
 
 🎉 Opening Samsung Wallet...
 
-WHAT HAPPENS NEXT:
-• Samsung Wallet page opens in new tab/window
-• Click "Add to Wallet" button
-• Card will be saved to your Samsung Wallet
+The Samsung Wallet page will open in a new window.
+Click "Add to Wallet" to save your digital card.
 
 FEATURES:
 ✓ Works on Samsung devices
-✓ Accessible offline after adding
+✓ Accessible offline
 ✓ QR code for quick sharing
 ✓ Auto-syncs across devices
 
 CARD INFO:
 • Partner Code: ${SAMSUNG_CONFIG.PARTNER_CODE}
-• Card ID: ${SAMSUNG_CONFIG.CARD_ID}
-• Status: Active
-
-💡 TIP: Works best on Samsung devices with
-   Samsung Wallet app installed.`
+• Card ID: ${SAMSUNG_CONFIG.CARD_ID}`
           });
         } else {
           throw new Error('Samsung Wallet button not generated');
@@ -180,26 +179,12 @@ CARD INFO:
 Backend URL: ${SAMSUNG_CONFIG.BACKEND_URL}
 
 Please check:
-1. Backend is deployed and running
-2. REACT_APP_SAMSUNG_BACKEND_URL is set correctly
-3. CORS is enabled for your domain
-4. API route is accessible
+1. Backend is deployed: ${SAMSUNG_CONFIG.BACKEND_URL}
+2. VITE_SAMSUNG_BACKEND_URL environment variable is set
+3. Backend has CORS enabled
+4. api/samsung-wallet.js file exists
 
 Error: ${error.message}`;
-      } else if (error.message.includes('script')) {
-        errorMessage = `Failed to load Samsung Wallet library.
-
-⚠️ SCRIPT LOADING ERROR
-
-This could be due to:
-• Ad blockers
-• Network issues
-• Samsung CDN unavailable
-
-Try:
-• Disable ad blocker
-• Check internet connection
-• Try again in a few moments`;
       }
       
       reject(new Error(errorMessage));

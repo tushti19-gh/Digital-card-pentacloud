@@ -28,7 +28,6 @@ Make sure your `.gitignore` includes:
 ```
 # Environment files
 .env
-.env.local
 backend/.env
 
 # Credentials

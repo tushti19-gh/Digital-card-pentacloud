@@ -1,32 +1,23 @@
 // ============================================
-// FILE: api/samsung-wallet.js
-// FIXED - Vercel Serverless Function
+// FILE: api/samsung-wallet.js  
+// CRITICAL: This file MUST be in api/ folder, NOT backend/
 // ============================================
 
-// ============================================
-// CONFIGURATION
-// ============================================
 const SAMSUNG_CONFIG = {
   PARTNER_CODE: '4137610299143138240',
-  ISSUER_ID: '4137948898276138496',
-
-  CARD_ID: '3ir7iadicu000'
+  CARD_ID: '3ir7iadicu000',
+  PRIVATE_KEY: process.env.SAMSUNG_PRIVATE_KEY
 };
 
-// ============================================
-// CORS HEADERS
-// ============================================
+// CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Credentials': 'true',
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': '*', // Change to your domain in production
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
-  'ngrok-skip-browser-warning': 'true'
 };
 
-// ============================================
-// IN-MEMORY CARD STORE
-// ============================================
+// In-memory card store (use database in production)
 const cardStore = new Map();
 
 // Initialize default card
@@ -40,32 +31,65 @@ cardStore.set(SAMSUNG_CONFIG.CARD_ID, {
 });
 
 // ============================================
-// JWT TOKEN GENERATION (Simple version)
+// JWT TOKEN GENERATION
 // ============================================
-function generateSimpleToken(cardData) {
-  // For testing without JWT library
+function generateJWTToken(cardData) {
+  // Simple JWT-like token for testing
+  // In production, use proper JWT with RS256 signing
+  const header = {
+    alg: 'RS256',
+    cty: 'CARD',
+    ver: 2,
+    partnerId: SAMSUNG_CONFIG.PARTNER_CODE,
+    utc: Date.now()
+  };
+
   const payload = {
-    iss: SAMSUNG_CONFIG.PARTNER_CODE,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24),
-    cardId: SAMSUNG_CONFIG.CARD_ID,
-    cardData: {
-      cardInfo: {
-        cardDesignType: 'GENERIC_01',
-        title: cardData.title || 'Digital Business Card',
-        subtitle: cardData.subtitle || 'Employee Identity',
-        description: cardData.description || 'Employee digital identity card'
-      },
-      barcode: {
-        format: 'QR_CODE',
-        value: cardData.qrValue
-      }
+    card: {
+      type: 'generic',
+      subType: 'others',
+      data: [{
+        refId: `ref-${Date.now()}`,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        language: 'en',
+        attributes: {
+          title: cardData.title || 'Digital Business Card',
+          subtitle: cardData.subtitle || 'Employee',
+          providerName: 'Digital Card',
+          startDate: Date.now(),
+          endDate: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 year
+          mainImg: 'https://via.placeholder.com/512',
+          noticeDesc: JSON.stringify({
+            count: 1,
+            info: [{
+              title: 'Notice',
+              content: [cardData.description || 'Digital Business Card']
+            }]
+          }),
+          appLinkLogo: 'https://via.placeholder.com/256',
+          appLinkName: 'Digital Card',
+          appLinkData: cardData.qrValue,
+          bgColor: '#0A1A4F',
+          fontColor: 'light',
+          serial1: {
+            value: cardData.qrValue,
+            serialType: 'QRCODE',
+            ptFormat: 'QRCODE',
+            ptSubFormat: 'QR_CODE'
+          }
+        }
+      }]
     }
   };
+
+  // Base64 encode (simplified - use proper JWT library in production)
+  const base64Header = Buffer.from(JSON.stringify(header)).toString('base64url');
+  const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64url');
   
-  // Convert to base64 (temporary solution)
-  const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
-  return `test.${base64Payload}.test`;
+  // For testing, return a simple token
+  // In production, sign with your SAMSUNG_PRIVATE_KEY
+  return `${base64Header}.${base64Payload}.test-signature`;
 }
 
 // ============================================
@@ -80,19 +104,18 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  // Set CORS headers for all responses
+  // Set CORS headers
   Object.entries(corsHeaders).forEach(([key, value]) => {
     res.setHeader(key, value);
   });
 
   const { method, url } = req;
-  console.log('🔔 Request:', method, url);
+  console.log('🔔 Samsung Wallet Request:', method, url);
 
   try {
-    // Parse URL path
     const urlObj = new URL(url, `https://${req.headers.host}`);
     const path = urlObj.pathname.replace('/api/samsung-wallet', '');
-    
+
     // ============================================
     // ROUTE 1: Health Check
     // ============================================
@@ -102,16 +125,17 @@ module.exports = async (req, res) => {
         timestamp: new Date().toISOString(),
         config: {
           partnerId: SAMSUNG_CONFIG.PARTNER_CODE,
-          cardId: SAMSUNG_CONFIG.CARD_ID,
-          issuerId: SAMSUNG_CONFIG.ISSUER_ID,
+          cardId: SAMSUNG_CONFIG.CARD_ID
         }
       });
     }
 
     // ============================================
-    // ROUTE 2: Generate Token
+    // ROUTE 2: Generate JWT Token (Main endpoint)
     // ============================================
     if (method === 'POST' && path === '/generate-token') {
+      console.log('🔐 Generating JWT token...');
+      
       const { cardData } = req.body;
       
       if (!cardData || !cardData.qrValue) {
@@ -120,7 +144,9 @@ module.exports = async (req, res) => {
         });
       }
 
-      const token = generateSimpleToken(cardData);
+      const token = generateJWTToken(cardData);
+      
+      console.log('✅ Token generated successfully');
       
       return res.status(200).json({
         success: true,
@@ -131,58 +157,20 @@ module.exports = async (req, res) => {
     }
 
     // ============================================
-    // ROUTE 3: Create Card
-    // ============================================
-    if (method === 'POST' && path === '/create') {
-      const { publicCardUrl, title, subtitle, description } = req.body;
-      
-      if (!publicCardUrl) {
-        return res.status(400).json({ error: 'publicCardUrl required' });
-      }
-
-      // Update card in store
-      if (cardStore.has(SAMSUNG_CONFIG.CARD_ID)) {
-        const card = cardStore.get(SAMSUNG_CONFIG.CARD_ID);
-        card.qrValue = publicCardUrl;
-        card.title = title || card.title;
-        card.subtitle = subtitle || card.subtitle;
-        card.description = description || card.description;
-      }
-
-      // Generate token
-      const token = generateSimpleToken({
-        qrValue: publicCardUrl,
-        title,
-        subtitle,
-        description
-      });
-
-      return res.status(200).json({
-        success: true,
-        cardId: SAMSUNG_CONFIG.CARD_ID,
-        token: token,
-        partnerCode: SAMSUNG_CONFIG.PARTNER_CODE,
-        rdClickUrl: `https://us-rd.mcsvc.samsung.com/statistics/click/addtowlt?ep=C50C3754FEB24833B30C10B275BB6AB8;cc=GC;ii=4063269063441135936;co=4137610299143138240;cp=1288017491089625089;si=24;pg=4058691328745130560;pi=Aqz68EBXSx6Mv9jsaZxzaA;tp=4137948898276138496;li=0`,
-        rdImpressionUrl: `https://us-rd.mcsvc.samsung.com/statistics/impression/addtowlt?ep=C50C3754FEB24833B30C10B275BB6AB8;cc=GC;ii=4063269063441135936;co=4137610299143138240;cp=1288017491089625089;si=24;pg=4058691328745130560;pi=Aqz68EBXSx6Mv9jsaZxzaA;tp=4137948898276138496;li=0`
-      });
-    }
-
-    // ============================================
-    // ROUTE 4: Get Card Data (Samsung Verification)
+    // ROUTE 3: Get Card Data (Samsung Verification)
     // ============================================
     if (method === 'GET' && path.startsWith('/cards/')) {
       const pathParts = path.split('/').filter(Boolean);
       const cardId = pathParts[1];
       const refId = pathParts[2];
       
-      console.log('🔍 Get Card Data - CardID:', cardId, 'RefID:', refId);
+      console.log('🔍 Samsung verification - CardID:', cardId, 'RefID:', refId);
 
       const card = cardStore.get(cardId);
 
       if (!card) {
         return res.status(404).json({ 
-          error: 'Card not found',
-          requestedCardId: cardId
+          error: 'Card not found'
         });
       }
 
@@ -205,20 +193,14 @@ module.exports = async (req, res) => {
     }
 
     // ============================================
-    // ROUTE 5: Send Card State (Samsung Event)
+    // ROUTE 4: Send Card State (Samsung Callback)
     // ============================================
     if (method === 'POST' && path.startsWith('/cards/')) {
       const pathParts = path.split('/').filter(Boolean);
       const cardId = pathParts[1];
       const refId = pathParts[2];
       
-      console.log('📨 Card State Event - CardID:', cardId, 'RefID:', refId);
-
-      if (cardStore.has(cardId)) {
-        const card = cardStore.get(cardId);
-        card.status = 'ACTIVE';
-        card.lastEventTime = new Date().toISOString();
-      }
+      console.log('📨 Samsung callback - CardID:', cardId, 'RefID:', refId);
 
       return res.status(200).json({
         result: 'SUCCESS',
@@ -236,8 +218,7 @@ module.exports = async (req, res) => {
   } catch (error) {
     console.error('💥 Error:', error);
     return res.status(500).json({ 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message
     });
   }
 };
