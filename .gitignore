@@ -27,7 +27,6 @@ echo "backend/google-wallet-key.json" >> .gitignore
 Make sure your `.gitignore` includes:
 ```
 # Environment files
-.env
 backend/.env
 
 # Credentials
