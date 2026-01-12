@@ -7,7 +7,7 @@ const SAMSUNG_CONFIG = {
   PARTNER_CODE: '4137610299143138240',
   CARD_ID: '3ir7iadicu000',
   // FIX: Use actual Vercel URL, not placeholder
-  BACKEND_URL: import.meta.env.VITE_SAMSUNG_BACKEND_URL || 'https://digital-card-pentacloud-rdmhkz80o-tushti19-ghs-projects.vercel.app',
+  BACKEND_URL: import.meta.env.VITE_SAMSUNG_BACKEND_URL || 'https://digital-card-pentacloud.vercel.app',
   SAMSUNG_SCRIPT_URL: 'https://us-cdn-gpp.mcsvc.samsung.com/lib/wallet-card.js',
   RD_CLICK_URL: 'https://us-rd.mcsvc.samsung.com/statistics/click/addtowlt?ep=C50C3754FEB24833B30C10B275BB6AB8;cc=GC;ii=4063269063441135936;co=4137610299143138240;cp=1288017491089625089;si=24;pg=4058691328745130560;pi=Aqz68EBXSx6Mv9jsaZxzaA;tp=4137948898276138496;li=0',
   RD_IMPRESSION_URL: 'https://us-rd.mcsvc.samsung.com/statistics/impression/addtowlt?ep=C50C3754FEB24833B30C10B275BB6AB8;cc=GC;ii=4063269063441135936;co=4137610299143138240;cp=1288017491089625089;si=24;pg=4058691328745130560;pi=Aqz68EBXSx6Mv9jsaZxzaA;tp=4137948898276138496;li=0'
