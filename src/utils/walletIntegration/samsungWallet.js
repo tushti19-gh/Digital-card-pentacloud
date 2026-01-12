@@ -182,7 +182,8 @@ Please check:
 1. Backend is deployed: ${SAMSUNG_CONFIG.BACKEND_URL}
 2. VITE_SAMSUNG_BACKEND_URL environment variable is set
 3. Backend has CORS enabled
-4. api/samsung-wallet.js file exists
+4.Backend server.js is running and deployed
+
 
 Error: ${error.message}`;
       }

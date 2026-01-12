@@ -21,6 +21,60 @@ console.log('🔍 Checking configuration...');
 
 const ISSUER_ID = process.env.ISSUER_ID;
 
+const SAMSUNG_PRIVATE_KEY = process.env.SAMSUNG_PRIVATE_KEY;
+
+if (!SAMSUNG_PRIVATE_KEY) {
+  console.warn('⚠️ SAMSUNG_PRIVATE_KEY not set (Samsung Wallet will not work in prod)');
+}
+
+
+//samsung
+// ============================================
+// SAMSUNG WALLET CONFIG
+// ============================================
+const SAMSUNG_CONFIG = {
+  PARTNER_CODE: '4137610299143138240',
+  CARD_ID: '3ir7iadicu000'
+};
+// ============================================
+// SAMSUNG WALLET - JWT GENERATION
+// ============================================
+function generateSamsungJWT(cardData) {
+  const payload = {
+    iss: SAMSUNG_CONFIG.PARTNER_CODE,
+    aud: 'samsung',
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 300,
+    card: {
+      type: 'generic',
+      subType: 'others',
+      data: [{
+        refId: `ref-${Date.now()}`,
+        language: 'en',
+        attributes: {
+          title: cardData.title,
+          subtitle: cardData.subtitle,
+          appLinkData: cardData.qrValue,
+          bgColor: '#0A1A4F',
+          fontColor: 'light'
+        }
+      }]
+    }
+  };
+
+  return jwt.sign(payload, SAMSUNG_PRIVATE_KEY, {
+    algorithm: 'RS256',
+    header: {
+      cty: 'CARD',
+      ver: 2
+    }
+  });
+}
+
+
+  
+
+
 if (!ISSUER_ID) {
   console.error('❌ ISSUER_ID not found in environment variables');
   process.exit(1);
@@ -551,4 +605,50 @@ if (process.env.VERCEL) {
       console.log('You can manually initialize with: npm run backend:init\n');
     }
   });
+
+  // ============================================
+// SAMSUNG WALLET ROUTES
+// ============================================
+
+// Samsung health check
+app.get('/api/samsung-wallet/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    wallet: 'Samsung',
+    partnerCode: SAMSUNG_CONFIG.PARTNER_CODE,
+    cardId: SAMSUNG_CONFIG.CARD_ID,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Generate Samsung Wallet token
+app.post('/api/samsung-wallet/generate-token', (req, res) => {
+  try {
+    const { cardData } = req.body;
+
+    if (!cardData || !cardData.qrValue) {
+      return res.status(400).json({
+        success: false,
+        error: 'cardData.qrValue is required'
+      });
+    }
+
+    const token = generateSamsungJWT(cardData);
+
+    return res.json({
+      success: true,
+      token,
+      partnerCode: SAMSUNG_CONFIG.PARTNER_CODE,
+      cardId: SAMSUNG_CONFIG.CARD_ID
+    });
+
+  } catch (error) {
+    console.error('❌ Samsung Wallet error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 }

@@ -2,7 +2,7 @@
 // FILE: api/samsung-wallet.js
 // Vercel Serverless Compatible (FIXED)
 // ============================================
-
+/*
 const SAMSUNG_CONFIG = {
   PARTNER_CODE: '4137610299143138240',
   CARD_ID: '3ir7iadicu000',
@@ -14,7 +14,7 @@ const SAMSUNG_CONFIG = {
 // ============================================
 const corsHeaders = {
   'Access-Control-Allow-Origin':
-    'https://digital-card-pentacloud-mpxy60e03-tushti19-ghs-projects.vercel.app',
+    'https://digital-card-pentacloud.vercel.app',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
@@ -199,4 +199,4 @@ export default async function handler(req, res) {
       details: err.message
     });
   }
-}
+} */
