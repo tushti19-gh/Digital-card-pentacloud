@@ -6,13 +6,13 @@
 const SAMSUNG_CONFIG = {
   PARTNER_CODE: '4137610299143138240',
   CARD_ID: '3ir7iadicu000',
-  PRIVATE_KEY: process.env.SAMSUNG_PRIVATE_KEY
+  PRIVATE_KEY: import.meta.env.SAMSUNG_PRIVATE_KEY
 };
 
 // CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Credentials': 'true',
-  'Access-Control-Allow-Origin': '*', // Change to your domain in production
+  'Access-Control-Allow-Origin': 'https://digital-card-pentacloud-mpxy60e03-tushti19-ghs-projects.vercel.app', // Change to your domain in production
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
