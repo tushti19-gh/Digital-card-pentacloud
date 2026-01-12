@@ -9,7 +9,7 @@
 const SAMSUNG_CONFIG = {
   PARTNER_CODE: '4137610299143138240',
   CARD_ID: '3ir7iadicu000',
-  BACKEND_URL: process.env.REACT_APP_SAMSUNG_BACKEND_URL || 'https://your-vercel-app.vercel.app',
+  BACKEND_URL: process.env.REACT_APP_SAMSUNG_BACKEND_URL || 'https://digital-card-pentacloud-rdmhkz80o-tushti19-ghs-projects.vercel.app',
   SAMSUNG_SCRIPT_URL: 'https://us-cdn-gpp.mcsvc.samsung.com/lib/wallet-card.js',
   RD_CLICK_URL: 'https://us-rd.mcsvc.samsung.com/statistics/click/addtowlt?ep=C50C3754FEB24833B30C10B275BB6AB8;cc=GC;ii=4063269063441135936;co=4137610299143138240;cp=1288017491089625089;si=24;pg=4058691328745130560;pi=Aqz68EBXSx6Mv9jsaZxzaA;tp=4137948898276138496;li=0',
   RD_IMPRESSION_URL: 'https://us-rd.mcsvc.samsung.com/statistics/impression/addtowlt?ep=C50C3754FEB24833B30C10B275BB6AB8;cc=GC;ii=4063269063441135936;co=4137610299143138240;cp=1288017491089625089;si=24;pg=4058691328745130560;pi=Aqz68EBXSx6Mv9jsaZxzaA;tp=4137948898276138496;li=0'
@@ -76,6 +76,7 @@ export const addToSamsungWallet = async (formData, publicCardUrl) => {
       await loadSamsungScript();
 
       // Step 2: Get JWT token from backend
+      console.log('🔐 Requesting token from backend...');
       const response = await fetch(`${SAMSUNG_CONFIG.BACKEND_URL}/api/samsung-wallet/create`, {
         method: 'POST',
         headers: {
@@ -88,7 +89,7 @@ export const addToSamsungWallet = async (formData, publicCardUrl) => {
           description: 'Employee digital identity card'
         })
       });
-
+      console.log('🌐 Backend response received');
       if (!response.ok) {
         throw new Error(`Backend error: ${response.status}`);
       }

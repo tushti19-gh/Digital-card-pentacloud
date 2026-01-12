@@ -8,6 +8,8 @@
 // ============================================
 const SAMSUNG_CONFIG = {
   PARTNER_CODE: '4137610299143138240',
+  ISSUER_ID: '4137948898276138496',
+
   CARD_ID: '3ir7iadicu000'
 };
 
@@ -100,7 +102,8 @@ module.exports = async (req, res) => {
         timestamp: new Date().toISOString(),
         config: {
           partnerId: SAMSUNG_CONFIG.PARTNER_CODE,
-          cardId: SAMSUNG_CONFIG.CARD_ID
+          cardId: SAMSUNG_CONFIG.CARD_ID,
+          issuerId: SAMSUNG_CONFIG.ISSUER_ID,
         }
       });
     }
