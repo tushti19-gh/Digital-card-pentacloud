@@ -1,161 +1,79 @@
 // ============================================
-// FILE: backend/server.js
-// SAMSUNG WALLET ONLY (CLEAN & SAFE)
+// Samsung Wallet – FLOW B (Data Fetch Link)
 // ============================================
 
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ============================================
-// BASIC SETUP
-// ============================================
-
-console.log('🔥 Samsung Wallet server starting...');
-
-app.use(cors({
-  origin: [
-    'https://digital-card-pentacloud.vercel.app',
-    'http://localhost:5173'
-  ],
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
-}));
-
-app.use(express.json());
-
-// ============================================
-// SAMSUNG CONFIG
-// ============================================
+// =========================
+// CONFIG
+// =========================
 
 const SAMSUNG_CONFIG = {
-  PARTNER_CODE: '4137610299143138240',
-  CARD_ID: '3ir7iadicu000'
+  CARD_ID: '3ir7iadicu000',
+  PARTNER_ID: '4137610299143138240',
 };
 
-const SAMSUNG_PRIVATE_KEY = process.env.SAMSUNG_PRIVATE_KEY
-  ?.replace(/\\n/g, '\n');
+app.use(cors());
+app.use(express.json());
 
+// =========================
+// HEALTH CHECK
+// =========================
 
-if (!SAMSUNG_PRIVATE_KEY) {
-  console.warn('⚠️ SAMSUNG_PRIVATE_KEY not set – Samsung Wallet will fail in prod');
-}
-console.log(
-  '🔑 Samsung key loaded:',
-  SAMSUNG_PRIVATE_KEY?.includes('BEGIN PRIVATE KEY')
-);
-
-// ============================================
-// SAMSUNG JWT GENERATION
-// ============================================
-
-function generateSamsungJWT(cardData) {
-  const payload = {
-    iss: SAMSUNG_CONFIG.PARTNER_CODE,
-    aud: 'samsung',
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 300,
-    card: {
-      type: 'generic',
-      subType: 'others',
-      data: [{
-        refId: `ref-${Date.now()}`,
-        language: 'en',
-        attributes: {
-          title: cardData.title || 'Digital Business Card',
-          subtitle: cardData.subtitle || 'Professional',
-          appLinkData: cardData.qrValue,
-          bgColor: '#0A1A4F',
-          fontColor: 'light'
-        }
-      }]
-    }
-  };
-
-  return jwt.sign(payload, SAMSUNG_PRIVATE_KEY, {
-    algorithm: 'RS256',
-    header: {
-      cty: 'CARD',
-      ver: 2
-    }
-  });
-}
-
-// ============================================
-// ROUTES
-// ============================================
-
-// Health check
-app.get('/api/samsung-wallet/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
-    wallet: 'Samsung',
-    partnerCode: SAMSUNG_CONFIG.PARTNER_CODE,
-    cardId: SAMSUNG_CONFIG.CARD_ID,
-    timestamp: new Date().toISOString()
+    flow: 'Samsung Wallet – Data Fetch Link',
+    time: new Date().toISOString(),
   });
 });
 
-// Generate token
-app.post('/api/samsung-wallet/generate-token', (req, res) => {
-  try {
-    const { cardData } = req.body;
+// =========================
+// GET CARD DATA API (MAIN)
+// Samsung calls this
+// =========================
 
-    if (!cardData || !cardData.qrValue) {
-      return res.status(400).json({
-        success: false,
-        error: 'cardData.qrValue is required'
-      });
-    }
+app.get('/cards/:cardId/:refId', (req, res) => {
+  const { cardId, refId } = req.params;
 
-    const token = generateSamsungJWT(cardData);
+  console.log('📥 Samsung Get Card Data called:', cardId, refId);
 
-    res.json({
-      success: true,
-      token,
-      partnerCode: SAMSUNG_CONFIG.PARTNER_CODE,
-      cardId: SAMSUNG_CONFIG.CARD_ID
-    });
+  res.setHeader('Content-Type', 'application/json');
 
-  } catch (error) {
-    console.error('❌ Samsung Wallet error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// ============================================
-// 404 HANDLER
-// ============================================
-
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Endpoint not found',
-    path: req.path
+  res.json({
+    card: {
+      type: 'generic',
+      data: [
+        {
+          refId,
+          language: 'en',
+          attributes: {
+            title: 'Digital Business Card',
+            subtitle: 'Employee Identity',
+            providerName: 'Pentacloud Consulting',
+            appLinkData: 'https://example.com',
+          },
+        },
+      ],
+    },
   });
 });
 
-// ============================================
-// EXPORT / START
-// ============================================
+// =========================
+// START SERVER
+// =========================
 
-if (process.env.VERCEL) {
-  module.exports = app;
-} else {
-  app.listen(PORT, () => {
-    console.log(`
+app.listen(PORT, () => {
+  console.log(`
 ╔══════════════════════════════════════╗
-║   📱 Samsung Wallet Backend         ║
-║   🚀 Running on port ${PORT}              ║
-║   📍 http://localhost:${PORT}            ║
+║   📱 Samsung Wallet Backend (Flow B) ║
+║   🚀 Running on port ${PORT}         ║
+║   📍 http://localhost:${PORT}        ║
 ╚══════════════════════════════════════╝
-    `);
-  });
-}
+`);
+});
