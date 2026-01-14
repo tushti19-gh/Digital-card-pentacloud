@@ -174,9 +174,7 @@ const PortalDashboard = ({ currentUser, onEditProfile, onLogout, formData }) => 
       alert('Please publish your card first');
       return;
     }
-    
     setIsGeneratingWallet(true);
-    
     try {
       const result = await addToGoogleWallet(formData, publicCardUrl);
       setTimeout(() => {
@@ -195,9 +193,7 @@ const PortalDashboard = ({ currentUser, onEditProfile, onLogout, formData }) => 
       alert('Please publish your card first');
       return;
     }
-    
     setIsGeneratingWallet(true);
-    
     try {
       const result = await addToAppleWallet(formData, publicCardUrl);
       setWalletMessage(result.message);
@@ -214,20 +210,29 @@ const PortalDashboard = ({ currentUser, onEditProfile, onLogout, formData }) => 
       alert('Please publish your card first');
       return;
     }
-    
+
     setIsGeneratingWallet(true);
     
     try {
+      // Option A: If you are using your utility helper (Recommended for consistency)
       const result = await addToSamsungWallet(formData, publicCardUrl);
       setWalletMessage(result.message);
       setShowWalletModal(true);
+
+      // Option B: If you just want to open the direct link (Uncomment below and remove above if preferred)
+      /*
+      const refId = `${currentUser.uid}-${Date.now()}`;
+      const CERT_ID = 'zAtI'; 
+      const CARD_ID = '3ir7iadicu000';
+      const samsungWalletUrl = `https://a.swallet.link/atw/v3/${CERT_ID}/${CARD_ID}#Clip?pdata=${encodeURIComponent(refId)}`;
+      window.open(samsungWalletUrl, '_blank');
+      */
     } catch (error) {
       alert('Error: ' + error.message);
     } finally {
       setIsGeneratingWallet(false);
     }
   };
-
   if (isLoading) {
     return (
       <div className="glass-card p-5 text-center" style={{ maxWidth: "1100px", width: "100%" }}>

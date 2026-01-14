@@ -9,7 +9,7 @@ export const addToSamsungWallet = async (formData, publicCardUrl) => {
   }
 
   // ⚠️ MUST come from Samsung Portal
-  const CERTIFICATE_ID = 'A123'; // <-- replace with your real Certificate ID
+  const CERTIFICATE_ID = 'zAtI'; // <-- replace with your real Certificate ID
   const CARD_ID = '3ir7iadicu000';
 
   // Unique per user/card
