@@ -15,6 +15,7 @@ const PORT = process.env.PORT || 3001;
 
 const SAMSUNG_CONFIG = {
   CARD_ID: '3ir7iadicu000',
+  // CARD_ID: '3irkhkak1m2g0',
   PARTNER_ID: '4137610299143138240',
 };
 
@@ -77,7 +78,39 @@ app.get('/cards/:cardId/:refId', (req, res) => {
         }
       });
 
-  } catch (err) {
+// app.get('/cards/:cardId/:refId', (req, res) => {
+//   try {
+//   const { refId } = req.params;
+//   const now = Date.now();
+
+//   res.status(200).json({
+//     card: {
+//       type: 'idcard',
+//       subType: 'employees',
+//       data: [
+//         {
+//           refId,
+//           createdAt: now,
+//           updatedAt: now,
+//           state: 'ACTIVE',
+//           language: 'en',
+//           attributes: {
+//             title: 'Business Card',              // REQUIRED
+//             holderName: 'Tushti',               // REQUIRED
+//             identifier: refId,                      // REQUIRED (unique)
+//             issueDate: now,                         // REQUIRED
+//             providerName: 'Pentacloud Consulting',  // REQUIRED
+//             csInfo: JSON.stringify({                // REQUIRED
+//               email: 'support@pentacloud.com',
+//               website: 'https://pentacloudconsulting.com'
+//             }),
+//             appLinkData: 'https://pentacloudconsulting.com'
+//           }
+//         }
+//       ]
+//     }
+//   });
+} catch (err) {
     console.error('❌ Error in Get Card Data:', err);
 
     // ⚠️ Even on error, DO NOT return 404
@@ -85,7 +118,7 @@ app.get('/cards/:cardId/:refId', (req, res) => {
   }
 });
 
-
+  
 
 
 
